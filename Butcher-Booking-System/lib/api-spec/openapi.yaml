@@ -1,0 +1,667 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Butcher Booking Management API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: bookings
+    description: Booking operations
+  - name: schedule
+    description: Schedule configuration
+  - name: rules
+    description: Booking rules configuration
+  - name: stats
+    description: Dashboard statistics
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /bookings:
+    get:
+      operationId: listBookings
+      tags: [bookings]
+      summary: List bookings
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, completed, cancelled]
+        - name: date
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: line
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Create a booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /bookings/{id}:
+    get:
+      operationId: getBooking
+      tags: [bookings]
+      summary: Get a booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: updateBooking
+      tags: [bookings]
+      summary: Update a booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingUpdate"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteBooking
+      tags: [bookings]
+      summary: Delete a booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /bookings/{id}/complete:
+    post:
+      operationId: completeBooking
+      tags: [bookings]
+      summary: Mark a booking as completed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Completed booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /bookings/{id}/cancel:
+    post:
+      operationId: cancelBooking
+      tags: [bookings]
+      summary: Cancel a booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cancelled booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /bookings/allocate:
+    post:
+      operationId: allocateSlots
+      tags: [bookings]
+      summary: Randomly allocate time slots to active bookings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllocateInput"
+      responses:
+        "200":
+          description: Allocated bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+
+  /schedule:
+    get:
+      operationId: getSchedule
+      tags: [schedule]
+      summary: Get current schedule configuration
+      responses:
+        "200":
+          description: Schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedule"
+    put:
+      operationId: updateSchedule
+      tags: [schedule]
+      summary: Update schedule configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleInput"
+      responses:
+        "200":
+          description: Updated schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedule"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /schedule/slots:
+    get:
+      operationId: getAvailableSlots
+      tags: [schedule]
+      summary: Get available time slots for today
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Available slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeSlot"
+
+  /rules:
+    get:
+      operationId: getRules
+      tags: [rules]
+      summary: Get booking rules
+      responses:
+        "200":
+          description: Rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingRules"
+    put:
+      operationId: updateRules
+      tags: [rules]
+      summary: Update booking rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingRulesInput"
+      responses:
+        "200":
+          description: Updated rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingRules"
+
+  /stats/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [stats]
+      summary: Get dashboard statistics for today
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /stats/lines:
+    get:
+      operationId: getLineStats
+      tags: [stats]
+      summary: Get per-line booking breakdown
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Line statistics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LineStat"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Booking:
+      type: object
+      required:
+        - id
+        - customerName
+        - phoneNumber
+        - animalType
+        - animalCount
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+        customerName:
+          type: string
+        phoneNumber:
+          type: string
+        animalType:
+          type: string
+        animalCount:
+          type: integer
+        notes:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, completed, cancelled]
+        assignedLine:
+          type: ["integer", "null"]
+        assignedTime:
+          type: ["string", "null"]
+        bookingDate:
+          type: string
+        slotOrder:
+          type: ["integer", "null"]
+        earlySlotCount:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    BookingInput:
+      type: object
+      required:
+        - customerName
+        - phoneNumber
+        - animalType
+        - animalCount
+      properties:
+        customerName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phoneNumber:
+          type: string
+          minLength: 7
+          maxLength: 20
+        animalType:
+          type: string
+          minLength: 1
+          maxLength: 50
+        animalCount:
+          type: integer
+          minimum: 1
+          maximum: 50
+        notes:
+          type: string
+          maxLength: 500
+        bookingDate:
+          type: string
+
+    BookingUpdate:
+      type: object
+      properties:
+        customerName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phoneNumber:
+          type: string
+          minLength: 7
+          maxLength: 20
+        animalType:
+          type: string
+          minLength: 1
+          maxLength: 50
+        animalCount:
+          type: integer
+          minimum: 1
+          maximum: 50
+        notes:
+          type: string
+          maxLength: 500
+        assignedLine:
+          type: ["integer", "null"]
+        assignedTime:
+          type: ["string", "null"]
+        bookingDate:
+          type: string
+
+    AllocateInput:
+      type: object
+      properties:
+        date:
+          type: string
+        forceReallocate:
+          type: boolean
+
+    Schedule:
+      type: object
+      required:
+        - id
+        - startTime
+        - endTime
+        - slotDuration
+        - breaks
+      properties:
+        id:
+          type: integer
+        startTime:
+          type: string
+        endTime:
+          type: string
+        slotDuration:
+          type: integer
+        breaks:
+          type: array
+          items:
+            $ref: "#/components/schemas/BreakPeriod"
+        updatedAt:
+          type: string
+
+    ScheduleInput:
+      type: object
+      required:
+        - startTime
+        - endTime
+        - slotDuration
+      properties:
+        startTime:
+          type: string
+        endTime:
+          type: string
+        slotDuration:
+          type: integer
+          minimum: 5
+          maximum: 240
+        breaks:
+          type: array
+          items:
+            $ref: "#/components/schemas/BreakPeriod"
+
+    BreakPeriod:
+      type: object
+      required:
+        - startTime
+        - endTime
+      properties:
+        startTime:
+          type: string
+        endTime:
+          type: string
+        label:
+          type: string
+
+    TimeSlot:
+      type: object
+      required:
+        - time
+        - line
+        - available
+      properties:
+        time:
+          type: string
+        line:
+          type: integer
+        available:
+          type: boolean
+        bookingId:
+          type: ["integer", "null"]
+        customerName:
+          type: ["string", "null"]
+
+    BookingRules:
+      type: object
+      required:
+        - id
+        - earlySlotCutoff
+        - maxAnimalsPerCustomer
+        - cooldownPeriodDays
+        - maxBookingsPerDay
+        - allowSameCustomerSameDay
+      properties:
+        id:
+          type: integer
+        earlySlotCutoff:
+          type: string
+        maxAnimalsPerCustomer:
+          type: integer
+        cooldownPeriodDays:
+          type: integer
+        maxBookingsPerDay:
+          type: integer
+        allowSameCustomerSameDay:
+          type: boolean
+        updatedAt:
+          type: string
+
+    BookingRulesInput:
+      type: object
+      properties:
+        earlySlotCutoff:
+          type: string
+        maxAnimalsPerCustomer:
+          type: integer
+          minimum: 1
+          maximum: 100
+        cooldownPeriodDays:
+          type: integer
+          minimum: 0
+          maximum: 365
+        maxBookingsPerDay:
+          type: integer
+          minimum: 1
+          maximum: 200
+        allowSameCustomerSameDay:
+          type: boolean
+
+    DashboardStats:
+      type: object
+      required:
+        - totalBookingsToday
+        - totalCompleted
+        - remaining
+        - totalAnimals
+        - line1Count
+        - line2Count
+        - date
+      properties:
+        totalBookingsToday:
+          type: integer
+        totalCompleted:
+          type: integer
+        remaining:
+          type: integer
+        totalAnimals:
+          type: integer
+        line1Count:
+          type: integer
+        line2Count:
+          type: integer
+        date:
+          type: string
+
+    LineStat:
+      type: object
+      required:
+        - line
+        - totalBookings
+        - completed
+        - remaining
+        - totalAnimals
+      properties:
+        line:
+          type: integer
+        totalBookings:
+          type: integer
+        completed:
+          type: integer
+        remaining:
+          type: integer
+        totalAnimals:
+          type: integer
